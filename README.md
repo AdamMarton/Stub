@@ -14,12 +14,16 @@ The script is tested against these frameworks/libraries:
 ## Usage
 
 ```
+$ composer require adammarton/stub
+```
+
+```
 <?php
 
-require_once('<wherever-it-is>\stubgen.php');
+require_once('vendor\autoload.php');
 
-$stubgen = new AdamMarton\Stubgen\Stubgen('<directory-to-parse>');
-$stubgen->generate('<output-directory>');
+$stub = new AdamMarton\Stub\Stub('<directory-to-parse>');
+$stub->generate('<output-directory>');
 ```
 
 ## Known Issues
@@ -37,5 +41,4 @@ $stubgen->generate('<output-directory>');
 * Restore logging feature
 * Implement CLI commands/options
 * Generate output in a single file optionally
-* Make it pluggable via composer
 * Experiment with [`Reflection`](http://php.net/manual/en/book.reflection.php), maybe it can speed up formatting
