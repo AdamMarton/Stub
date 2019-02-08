@@ -1,0 +1,17 @@
+{
+    "name": "adammarton/stub",
+    "description": "Universal stub generator for static code analysis.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Adam Marton",
+            "email": "fotofabrik@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "AdamMarton\\Stub\\": "src/"
+        }
+    }
+}
