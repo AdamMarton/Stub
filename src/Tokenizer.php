@@ -423,7 +423,6 @@ final class Tokenizer
         if ($this->getCurrentToken(1) === 'class' && in_array(self::PARENTHESIS_OPEN, $this->seekTo([self::BRACKET_OPEN])) ||
             $seekNonEmpty['token'] === self::BRACKET_OPEN
         ) {
-            //var_dump('we got one');
             $iterator = 1;
             $opening  = 0;
             $closing  = 0;
@@ -432,13 +431,15 @@ final class Tokenizer
                 $iterator++;
                 $tempToken = is_array($tempToken) ? $tempToken[1] : $tempToken;
                 $tempArr[] = $tempToken;
+
                 if ($tempToken === self::BRACKET_OPEN) {
                     $opening++;
                 }
+
                 if ($tempToken === self::BRACKET_CLOSE) {
                     $closing++;
                 }
-                //var_dump('O: ' . $opening . ', C: ' . $closing . ', I: ' . $iterator);
+
                 if ($closing > $opening) {
                     $this->next($iterator);
                     return false;
@@ -475,9 +476,7 @@ final class Tokenizer
         ) {
             throw new LambdaException();
         }
-        // if (in_array('bool', $seek)) {
-        //     var_dump($seek);
-        // }
+
         $header = array_merge([$currentToken], $seek);
 
         if (in_array(Storage::S_FUNCTION, $header)) {
