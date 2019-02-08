@@ -25,7 +25,7 @@ final class Stub
     private $logEnabled    = true;
 
     /**
-     * @var mixed
+     * @var null|resource
      */
     private $logHandler    = null;
 
@@ -101,29 +101,30 @@ final class Stub
         $this->stat['total_files'] = $totalFiles;
 
         foreach ($sourceFiles as $file) {
-            $filePath  = $file->getPath();
-            // $message   = "Processing file ({$counter} of {$totalFiles}): " . $file->getBasename();
-            // print $message . str_pad('', strlen($message), ' ') . "\r";
-            $this->prepareDir($filePath);
-            $source    = $this->getContent($file);
-            $this->stat[self::STAT_SIZE_INPUT] += strlen($source);
-            $tokenizer = new Tokenizer($source);
-            $stub      = $tokenizer->parse();
-            $this->stat[self::STAT_SIZE_OUTPUT] += strlen($stub);
-            $this->saveStub($file, $stub);
-            $counter++;
+            if ($file instanceof \SplFileInfo) {
+                $filePath  = $file->getPath();
+                $message   = "Processing file ({$counter} of {$totalFiles}): " . $file->getBasename();
+                print $message . str_pad('', strlen($message), ' ') . "\r";
+                $this->prepareDir($filePath);
+                $source    = $this->getContent($file);
+                $this->stat[self::STAT_SIZE_INPUT] += strlen($source);
+                $tokenizer = new Tokenizer($source);
+                $stub      = $tokenizer->parse();
+                $this->stat[self::STAT_SIZE_OUTPUT] += strlen($stub);
+                $this->saveStub($file, $stub);
+                $counter++;
+            }
         }
 
-        $executionTime = number_format($start = microtime(true) - $start, 2);
-        $originalSize  = number_format($this->stat[self::STAT_SIZE_INPUT]/1000000, 2);
-        $stubSize      = number_format($this->stat[self::STAT_SIZE_OUTPUT]/1000000, 2);
-        $ratio         = number_format(($stubSize/$originalSize) * 100, 2);
+        $executionTime = number_format(($start = microtime(true) - $start), 2);
+        $originalSize  = number_format((float) ($this->stat[self::STAT_SIZE_INPUT]/1000000), 2);
+        $stubSize      = (float) number_format((float) ($this->stat[self::STAT_SIZE_OUTPUT]/1000000), 2);
+        $ratio         = number_format((($stubSize/$originalSize) * 100), 2);
 
-        print "\n\n";
-        print "Parsed a total of {$totalFiles} files in {$executionTime} secs.\r\n";
-        print "Original ({$originalSize} Mbytes) to Stub ({$stubSize} Mbytes) size ratio is {$ratio}%.\r\n";
+        print "\n\nParsed a total of {$totalFiles} files in {$executionTime} secs.\r\n";
+        print "Original ({$originalSize} Mbytes) to Stub ({$stubSize} Mbytes) size ratio is {$ratio}%.\r\n\n";
 
-        if ($this->logHandler) {
+        if (is_resource($this->logHandler)) {
             fclose($this->logHandler);
         }
     }
@@ -137,7 +138,7 @@ final class Stub
         $iterator = $this->getIterator();
 
         foreach ($iterator as $path) {
-            if ($path->getExtension() === 'php') {
+            if ($path instanceof \SplFileInfo && $path->getExtension() === 'php') {
                 $phpFiles[] = $path;
             }
         }
@@ -201,9 +202,10 @@ final class Stub
 
     /**
      * @param  \SplFileInfo $file
+     * @param  string       $stub
      * @return void
      */
-    private function saveStub(\SplFileInfo $file, $stub)
+    private function saveStub(\SplFileInfo $file, string $stub)
     {
         $handler = fopen(
             $this->getOutputPath($file),
@@ -232,12 +234,12 @@ final class Stub
      */
     private function log(string $message)
     {
-        if ($this->logEnabled) {
+        if ($this->logEnabled && is_resource($this->logHandler)) {
             fwrite($this->logHandler, $message . Tokenizer::LINE_BREAK);
         }
 
         if ($this->debugEnabled) {
-            var_dump($message);
+            print_r($message);
         }
     }
 }

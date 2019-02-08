@@ -15,6 +15,11 @@ final class DocblockEntity extends Entity implements EntityInterface
     protected $type = Storage::S_DOCBLOCK;
 
     /**
+     * @var string
+     */
+    protected $data = '';
+
+    /**
      * @return string
      */
     public function __toString() : string
@@ -28,10 +33,13 @@ final class DocblockEntity extends Entity implements EntityInterface
      */
     public function add(Tokenizer $tokenizer)
     {
-        $this->data = $tokenizer->getCurrentToken(1);
+        $this->data = (string) $tokenizer->getCurrentToken(1);
     }
 
-    private function format()
+    /**
+     * @return string
+     */
+    private function format() : string
     {
         return $this->indent(str_replace('	', '    ', $this->data));
     }

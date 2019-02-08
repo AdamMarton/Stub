@@ -19,17 +19,26 @@ abstract class Entity
      */
     protected $indent = 0;
 
+    /**
+     * @return string
+     */
     public function type() : string
     {
         return $this->type;
     }
 
+    /**
+     * @return void
+     */
     public function setIndent(int $indent)
     {
         $this->indent = $indent;
     }
 
-    protected function pad()
+    /**
+     * @return string
+     */
+    protected function pad() : string
     {
         return str_pad('', $this->indent, ' ');
     }

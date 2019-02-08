@@ -34,15 +34,18 @@ final class VariableEntity extends Entity implements EntityInterface
         );
     }
 
-    private function format()
+    /**
+     * @return string
+     */
+    private function format() : string
     {
-        $signature = $this->data;
+        $signature = (array) $this->data;
         $hasValue  = array_search('=', $signature);
 
-        if ($hasValue) {
+        if (is_int($hasValue) && $hasValue) {
             array_walk(
                 $signature,
-                function (&$value, $key) {
+                function (string &$value, int $key) : void {
                     if ($value === '=>') {
                         $value = ' => ';
                     }

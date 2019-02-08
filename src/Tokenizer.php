@@ -52,9 +52,9 @@ final class Tokenizer
     protected $currentToken;
 
     /**
-     * @var Storage
+     * @var null|Storage
      */
-    private $storage;
+    private $storage        = null;
 
     /**
      * @var bool
@@ -134,8 +134,14 @@ final class Tokenizer
     {
         $class = __NAMESPACE__ . '\\Entity\\' . ucfirst($type) . 'Entity';
         $class = new $class;
-        $class->add($this);
 
+        if ($class instanceof EntityInterface) {
+            $class->add($this);
+            return $class;
+        }
+
+        $class = new Entity\StringEntity();
+        $class->add();
         return $class;
     }
 
@@ -202,8 +208,9 @@ final class Tokenizer
         $useEntity   = $this->initEntity(Storage::S_USE);
         $classEntity = $this->getLastEntity(Storage::S_CLASS);
 
-        if ($classEntity) {
-            return $classEntity->addUse($useEntity);
+        if ($classEntity instanceof Entity\ClassEntity) {
+            $classEntity->addUse($useEntity);
+            return;
         }
 
         $this->addEntity($useEntity);
@@ -222,7 +229,7 @@ final class Tokenizer
         $functionEntity = $this->initEntity(Storage::S_FUNCTION);
         $classEntity    = $this->getLastEntity(Storage::S_CLASS);
 
-        if ($classEntity) {
+        if ($classEntity instanceof Entity\ClassEntity) {
             $classEntity->addMethod($functionEntity);
         }
     }
@@ -244,7 +251,7 @@ final class Tokenizer
     {
         $classEntity = $this->getLastEntity(Storage::S_CLASS);
 
-        if ($classEntity) {
+        if ($classEntity instanceof Entity\ClassEntity) {
             $classEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
         }
     }
@@ -257,7 +264,7 @@ final class Tokenizer
         $classEntity    = $this->getLastEntity(Storage::S_CLASS);
         $docblockEntity = $this->initEntity(Storage::S_DOCBLOCK);
 
-        if ($classEntity) {
+        if ($classEntity instanceof Entity\ClassEntity) {
             $classEntity->addDocblock($docblockEntity);
         } elseif ($this->getStorageSize() === 1) {
             $this->addEntity($docblockEntity);
@@ -275,7 +282,7 @@ final class Tokenizer
             if ($this->isFunction()) {
                 $functionEntity = $this->initEntity(Storage::S_FUNCTION);
 
-                if ($classEntity) {
+                if ($classEntity instanceof Entity\ClassEntity) {
                     $classEntity->addMethod($functionEntity);
                     return;
                 }
@@ -286,7 +293,10 @@ final class Tokenizer
 
             $nextNonEmpty = $this->seekToNonEmpty();
 
-            if ($classEntity && $nextNonEmpty['token'] !== '::') {
+            if ($classEntity instanceof Entity\ClassEntity &&
+                isset($nextNonEmpty['token']) &&
+                $nextNonEmpty['token'] !== '::'
+            ) {
                 $classEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
             }
         } catch (LambdaException $e) {
@@ -327,7 +337,7 @@ final class Tokenizer
                 return $tempToken;
             }
 
-            $tempToken = trim($tempToken[1]);
+            $tempToken = trim((string) $tempToken[1]);
 
             if (is_numeric($tempToken) || !empty($tempToken)) {
                 return $tempToken;
@@ -352,6 +362,8 @@ final class Tokenizer
 
             $tempTokens[] = $tempToken;
         }
+
+        return $tempTokens;
     }
 
     /**
@@ -363,12 +375,12 @@ final class Tokenizer
         $tempTokens = [];
 
         foreach ($this->tokens as $tempToken) {
-            $tempToken = is_array($tempToken) ? $tempToken[1] : $tempToken;
+            $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
 
             if ($this->inOrEqual($tempToken, $token)) {
                 return array_filter(
                     $tempTokens,
-                    function ($value, $key) {
+                    function (string $value, int $key) : bool {
                         return !empty(trim($value));
                     },
                     ARRAY_FILTER_USE_BOTH
@@ -389,7 +401,7 @@ final class Tokenizer
         $iterator = 0;
 
         foreach ($this->tokens as $tempToken) {
-            $tempToken = is_array($tempToken) ? $tempToken[1] : $tempToken;
+            $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
             $iterator++;
 
             if (is_numeric($tempToken) || !empty(trim($tempToken))) {
@@ -402,8 +414,8 @@ final class Tokenizer
     }
 
     /**
-     * @param  string $needle
-     * @param  string|array $haystack
+     * @param  mixed $needle
+     * @param  mixed $haystack
      * @return bool
      */
     private function inOrEqual($needle, $haystack)
@@ -421,7 +433,7 @@ final class Tokenizer
         $seekNonEmpty = $this->seekToNonEmpty();
         
         if ($this->getCurrentToken(1) === 'class' && in_array(self::PARENTHESIS_OPEN, $this->seekTo([self::BRACKET_OPEN])) ||
-            $seekNonEmpty['token'] === self::BRACKET_OPEN
+            is_array($seekNonEmpty) && $seekNonEmpty['token'] === self::BRACKET_OPEN
         ) {
             $iterator = 1;
             $opening  = 0;
@@ -429,7 +441,7 @@ final class Tokenizer
             $tempArr  = [];
             foreach ($this->tokens as $tempToken) {
                 $iterator++;
-                $tempToken = is_array($tempToken) ? $tempToken[1] : $tempToken;
+                $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
                 $tempArr[] = $tempToken;
 
                 if ($tempToken === self::BRACKET_OPEN) {
@@ -466,7 +478,7 @@ final class Tokenizer
     private function isFunction() : bool
     {
         $seek         = $this->seekTo([self::SEMICOLON, self::BRACKET_OPEN]);
-        $currentToken = $this->getCurrentToken(1);
+        $currentToken = (string) $this->getCurrentToken(1);
 
         if (in_array('use', $seek) ||
             ($currentToken === 'static' && !in_array(Storage::S_FUNCTION, $seek)) ||

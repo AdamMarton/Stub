@@ -36,18 +36,18 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        $signature  = $this->data;
+        $signature  = (array) $this->data;
         $returnType = '';
         $ofset      = -1;
-        $name       = array_slice($signature, 0, array_search(Tokenizer::PARENTHESIS_OPEN, $signature));
+        $name       = array_slice($signature, 0, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature));
         $isAbstract = in_array('abstract', $name);
 
         if ($signature[sizeof($signature)-2] === ':') {
-            $returnType = ' : ' . array_pop($signature);
+            $returnType = ' : ' . (string) array_pop($signature);
             $ofset      = -2;
         }
 
-        $arguments  = array_slice($signature, array_search(Tokenizer::PARENTHESIS_OPEN, $signature)+1, $ofset);
+        $arguments  = array_slice($signature, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature)+1, $ofset);
         $arguments  = $this->arguments($arguments);
 
         $signature  =
@@ -71,12 +71,11 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     protected function arguments(array $arguments) : array
     {
-        //$arguments = array_slice($arguments, array_search(Tokenizer::PARENTHESIS_OPEN, $arguments)+1, -1);
         $arguments = explode(',', str_replace(['='], [' = '], implode('', $arguments)));
 
         array_walk(
             $arguments,
-            function (&$value, $key) {
+            function (string &$value, int $key) : void {
                 $value = preg_replace('/^(\w+)(\$\w+)/i', '$1 $2', $value);
             }
         );

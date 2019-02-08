@@ -47,7 +47,9 @@ final class ClassEntity extends Entity implements EntityInterface
         $php = [];
 
         foreach ($this->data as $source) {
-            $php[] = $this->format($source);
+            if (is_array($source)) {
+                $php[] = $this->format($source);
+            }
         }
 
         return implode(Tokenizer::LINE_BREAK, $php) . Tokenizer::BRACKET_CLOSE . Tokenizer::LINE_BREAK;
@@ -80,7 +82,7 @@ final class ClassEntity extends Entity implements EntityInterface
     public function format(array $source) : string
     {
         list($type, $signature) = array_values($source);
-        $formatterMethod        = 'format' . ucfirst($type);
+        $formatterMethod        = 'format' . ucfirst((string) $type);
 
         if (method_exists($this, $formatterMethod)) {
             return call_user_func_array(
@@ -90,6 +92,8 @@ final class ClassEntity extends Entity implements EntityInterface
                 [$signature]
             );
         }
+
+        return '';
     }
 
     /**
@@ -115,7 +119,8 @@ final class ClassEntity extends Entity implements EntityInterface
         try {
             return (string) $entity;
         } catch (\Exception $e) {
-            var_dump($e->getMessage());
+            print($e->getMessage());
+            return '';
         }
     }
 
@@ -128,7 +133,7 @@ final class ClassEntity extends Entity implements EntityInterface
         if (is_array($this->data) && sizeof($this->data)) {
             $lastData = array_pop($this->data);
             
-            if ($lastData[self::DATA_TYPE] !== 'docblock') {
+            if (is_array($lastData) && $lastData[self::DATA_TYPE] !== 'docblock') {
                 $this->data[] = $lastData;
             }
 

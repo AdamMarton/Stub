@@ -15,6 +15,11 @@ final class StringEntity extends Entity implements EntityInterface
     protected $type = Storage::S_STRING;
 
     /**
+     * @var string
+     */
+    protected $data = '';
+
+    /**
      * @return string
      */
     public function __toString() : string
@@ -28,23 +33,26 @@ final class StringEntity extends Entity implements EntityInterface
      */
     public function add(Tokenizer $tokenizer)
     {
-        $data = trim(str_replace("\n", '', $tokenizer->getCurrentToken(1)));
+        $input = trim(str_replace(Tokenizer::LINE_BREAK, '', (string) $tokenizer->getCurrentToken(1)));
 
-        switch ($data) {
+        switch ($input) {
             case '<?php':
                 break;
             case 'define':
-                $data = str_replace([',', '.', "\n"], [', ', ' . ', ''], implode('', array_merge([$data], $tokenizer->advanceTo(Tokenizer::SEMICOLON))) . Tokenizer::SEMICOLON);
+                $input = str_replace([',', '.', "\n"], [', ', ' . ', ''], (string) implode('', array_merge([$input], $tokenizer->advanceTo(Tokenizer::SEMICOLON))) . Tokenizer::SEMICOLON);
                 break;
             default:
-                $data = '';
+                $input = '';
                 break;
         }
 
-        $this->data = $data;
+        $this->data = $input;
     }
 
-    private function format()
+    /**
+     * @return string
+     */
+    private function format() : string
     {
         return $this->data;
     }
