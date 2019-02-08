@@ -4,8 +4,8 @@ A stub generator written in PHP. Useful for creating stubs for static code analy
 
 The script is tested against these frameworks/libraries:
 
-* WordPress
-* Laravel
+* WordPress (~43secs)
+* Laravel (~6secs)
 
 ## Features
 
@@ -37,6 +37,5 @@ $stubgen->generate('<output-directory>');
 * Restore logging feature
 * Implement CLI commands/options
 * Generate output in a single file optionally
-* Display status during parsing
 * Make it pluggable via composer
 * Experiment with [`Reflection`](http://php.net/manual/en/book.reflection.php), maybe it can speed up formatting
