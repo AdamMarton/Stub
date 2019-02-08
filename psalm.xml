@@ -8,11 +8,7 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config file://C:\work\data\www\forms\vendor\vimeo\psalm\config.xsd"
 >
     <projectFiles>
-        <directory name=".\vendor\boi\library" />
-        <directory name=".\web\app\plugins\wp-utilities\includes\classes" />
-        <ignoreFiles>
-            <directory name=".\vendor\boi\library\BackEnd\ThirdParty" />
-        </ignoreFiles>
+        <directory name=".\src" />
     </projectFiles>
 
     <issueHandlers>
