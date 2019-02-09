@@ -63,8 +63,8 @@ final class ObjectEntity extends Entity implements EntityInterface
 
         if (method_exists($this, $formatterMethod)) {
             return call_user_func_array(
-                function (...$parameters) use ($formatterMethod) {
-                    return $this->$formatterMethod(...$parameters);
+                function (...$parameters) use ($formatterMethod) : string {
+                    return (string) $this->$formatterMethod(...$parameters);
                 },
                 [$signature]
             );
@@ -107,7 +107,7 @@ final class ObjectEntity extends Entity implements EntityInterface
      */
     public function addDocblock(EntityInterface $entity)
     {
-        if (is_array($this->data) && sizeof($this->data)) {
+        if (sizeof($this->data)) {
             $lastData = array_pop($this->data);
             
             if (is_array($lastData) && $lastData[self::DATA_TYPE] !== 'docblock') {

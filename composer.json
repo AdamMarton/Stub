@@ -15,6 +15,7 @@
         }
     },
     "require-dev": {
-        "vimeo/psalm": "^3.0"
+        "vimeo/psalm": "^3.0",
+        "phpunit/phpunit": "8"
     }
 }

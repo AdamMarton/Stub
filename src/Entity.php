@@ -73,6 +73,7 @@ abstract class Entity
     }
 
     /**
+     * @param  int  $indent
      * @return void
      */
     public function setIndent(int $indent)

@@ -99,6 +99,9 @@ final class Stub
             $this->outputPath = $outputPath;
         }
         $this->stat['total_files'] = $totalFiles;
+        $logCallback      = function ($args) {
+            return call_user_func_array([$this, 'log'], [$args]);
+        };
 
         foreach ($sourceFiles as $file) {
             if ($file instanceof \SplFileInfo) {
@@ -107,23 +110,21 @@ final class Stub
                 print $message . str_pad('', strlen($message), ' ') . "\r";
                 $this->prepareDir($filePath);
                 $source    = $this->getContent($file);
-                $this->stat[self::STAT_SIZE_INPUT] += strlen($source);
+                $this->increaseInput(strlen($source));
                 $tokenizer = new Tokenizer(
                     $source,
-                    function ($args) {
-                        return call_user_func_array([$this, 'log'], [$args]);
-                    }
+                    $logCallback
                 );
                 $stub      = $tokenizer->parse();
-                $this->stat[self::STAT_SIZE_OUTPUT] += strlen($stub);
+                $this->increaseOutput(strlen($stub));
                 $this->saveStub($file, $stub);
                 $counter++;
             }
         }
 
         $executionTime = number_format(($start = microtime(true) - $start), 2);
-        $originalSize  = number_format((float) ($this->stat[self::STAT_SIZE_INPUT]/1000000), 2);
-        $stubSize      = (float) number_format((float) ($this->stat[self::STAT_SIZE_OUTPUT]/1000000), 2);
+        $originalSize  = (float) number_format((float) ($this->getInputSize()/1000000), 2);
+        $stubSize      = (float) number_format((float) ($this->getOutputSize()/1000000), 2);
         $ratio         = number_format((($stubSize/$originalSize) * 100), 2);
 
         print "\n\nParsed a total of {$totalFiles} files in {$executionTime} secs.\r\n";
@@ -246,5 +247,41 @@ final class Stub
         if ($this->debugEnabled) {
             print_r($message);
         }
+    }
+
+    /**
+     * @param  int $size
+     * @return void
+     */
+    private function increaseInput(int $size)
+    {
+        $inputSize = (int) $this->stat[self::STAT_SIZE_INPUT];
+        $this->stat[self::STAT_SIZE_INPUT] = $inputSize + $size;
+    }
+
+    /**
+     * @return int
+     */
+    private function getInputSize() : int
+    {
+        return (int) $this->stat[self::STAT_SIZE_INPUT];
+    }
+
+    /**
+     * @param  int $size
+     * @return void
+     */
+    private function increaseOutput(int $size)
+    {
+        $outputSize = (int) $this->stat[self::STAT_SIZE_OUTPUT];
+        $this->stat[self::STAT_SIZE_OUTPUT] = $outputSize + $size;
+    }
+
+    /**
+     * @return int
+     */
+    private function getOutputSize() : int
+    {
+        return (int) $this->stat[self::STAT_SIZE_OUTPUT];
     }
 }
