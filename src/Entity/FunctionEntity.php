@@ -100,7 +100,7 @@ final class FunctionEntity extends Entity implements EntityInterface
                 $signature
             );
         }
-        return $signature;
-    }
 
+        return (string) preg_replace('/(\w)\$/s', "$1 $", $signature);
+    }
 }
