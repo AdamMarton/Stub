@@ -4,8 +4,8 @@ A stub generator written in PHP. Useful for creating stubs for static code analy
 
 The script is tested against these frameworks/libraries:
 
-* WordPress (~43secs)
-* Laravel (~6secs)
+* WordPress (~5secs)
+* Laravel (~2.5secs)
 
 ## Features
 
