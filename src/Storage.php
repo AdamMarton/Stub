@@ -61,7 +61,7 @@ final class Storage
 
     /**
      * @param  string $type
-     * @return mixed
+     * @return null|EntityInterface
      */
     public function getLast(string $type)
     {

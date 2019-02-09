@@ -60,9 +60,9 @@ final class Tokenizer
     protected $currentToken;
 
     /**
-     * @var null|Storage
+     * @var Storage
      */
-    private $storage        = null;
+    private $storage;
 
     /**
      * @var bool
@@ -80,8 +80,10 @@ final class Tokenizer
      */
     public function __construct(string $source, callable $logger)
     {
-        $this->source = $source;
-        $this->logger = $logger;
+        $this->source  = $source;
+        $this->logger  = $logger;
+        $this->storage = new Storage();
+
         $this->initIterator();
     }
 
@@ -139,10 +141,6 @@ final class Tokenizer
      */
     private function getStorage() : Storage
     {
-        if ($this->storage === null) {
-            $this->storage = new Storage();
-        }
-
         return $this->storage;
     }
 
@@ -184,7 +182,7 @@ final class Tokenizer
 
     /**
      * @param  string $type
-     * @return mixed
+     * @return null|EntityInterface
      */
     private function getLastEntity(string $type)
     {
