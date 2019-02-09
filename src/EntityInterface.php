@@ -2,16 +2,17 @@
 
 namespace AdamMarton\Stub;
 
+use AdamMarton\Stub\Token\TokenIterator;
+
 interface EntityInterface
 {
     public function __toString() : string;
     public function type() : string;
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer);
-
+    public function add(TokenIterator $tokenIterator);
     public function setIndent(int $indent);
 }

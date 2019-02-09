@@ -6,6 +6,8 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class VariableEntity extends Entity implements EntityInterface
 {
@@ -13,6 +15,11 @@ final class VariableEntity extends Entity implements EntityInterface
      * @var string
      */
     protected $type = Storage::S_VARIABLE;
+
+    /**
+     * @var array
+     */
+    protected $data = [];
 
     /**
      * @return string
@@ -23,15 +30,12 @@ final class VariableEntity extends Entity implements EntityInterface
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $this->data = array_merge(
-            [$tokenizer->getCurrentToken(1)],
-            $tokenizer->advanceTo([Tokenizer::SEMICOLON])
-        );
+        $this->data = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
     }
 
     /**
@@ -39,7 +43,7 @@ final class VariableEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        $signature = (array) $this->data;
+        $signature = $this->data;
         $hasValue  = array_search('=', $signature);
 
         if (is_int($hasValue) && $hasValue) {
@@ -52,21 +56,43 @@ final class VariableEntity extends Entity implements EntityInterface
                     if ($value === '=') {
                         $value = ' = ';
                     }
-                    if ($value === '//') {
-                        $value = '';
+                    if ($value === ',') {
+                        $value = ', ';
                     }
                 }
             );
 
-            return $this->pad() . implode(
+            return $this->formatArray($this->pad() . implode(
                 ' ',
                 array_slice($signature, 0, $hasValue)
             ) . implode(
                 '',
                 array_slice($signature, $hasValue)
-            ) . Tokenizer::SEMICOLON . Tokenizer::LINE_BREAK;
+            ) . Tokenizer::LINE_BREAK);
         }
 
-        return $this->pad() . implode(' ', $signature) . Tokenizer::SEMICOLON . Tokenizer::LINE_BREAK;
+        return $this->pad() .
+            str_replace(
+                ' ' . Tokenizer::SEMICOLON,
+                Tokenizer::SEMICOLON,
+                implode(' ', $signature)
+            ) . Tokenizer::LINE_BREAK;
+    }
+
+    /**
+     * @param  string $variable
+     * @return string $variable
+     */
+    private function formatArray(string $variable) : string
+    {
+        if (substr_count($variable, '[') && !substr_count($variable, ' = [];')) {
+            $variable = (string) preg_replace(
+                ['/\=\s\[/s', '/,\s/s', "/\n\s+\]\;/s"],
+                [" = [\n" . $this->pad() . $this->pad(), ",\n" . $this->pad() . $this->pad(), "\n" . $this->pad() . '];'],
+                $variable
+            );
+        }
+
+        return $variable;
     }
 }

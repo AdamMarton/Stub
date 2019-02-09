@@ -6,6 +6,8 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class StringEntity extends Entity implements EntityInterface
 {
@@ -28,18 +30,18 @@ final class StringEntity extends Entity implements EntityInterface
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $input = trim(str_replace(Tokenizer::LINE_BREAK, '', (string) $tokenizer->getCurrentToken(1)));
+        $input = $tokenIterator->current();
 
         switch ($input) {
             case '<?php':
                 break;
             case 'define':
-                $input = str_replace([',', '.', "\n"], [', ', ' . ', ''], (string) implode('', array_merge([$input], $tokenizer->advanceTo(Tokenizer::SEMICOLON))) . Tokenizer::SEMICOLON);
+                $input = implode('', $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON)));
                 break;
             default:
                 $input = '';
