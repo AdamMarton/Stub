@@ -7,11 +7,6 @@ final class Storage
     /**
      * @var string
      */
-    const S_CLASS     = 'class';
-
-    /**
-     * @var string
-     */
     const S_DOCBLOCK  = 'docblock';
 
     /**
@@ -33,6 +28,11 @@ final class Storage
      * @var string
      */
     const S_USE       = 'use';
+
+    /**
+     * @var string
+     */
+    const S_OBJECT    = 'object';
 
     /**
      * @var string

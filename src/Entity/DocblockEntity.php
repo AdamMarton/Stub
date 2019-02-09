@@ -6,6 +6,7 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
 
 final class DocblockEntity extends Entity implements EntityInterface
 {
@@ -28,18 +29,19 @@ final class DocblockEntity extends Entity implements EntityInterface
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $this->data = (string) $tokenizer->getCurrentToken(1);
+        $this->data = $tokenIterator->current();
     }
 
     /**
      * @return string
      */
     private function format() : string
-        return $this->indent(str_replace('	', '    ', $this->data));
+    {
+        return $this->pad() . $this->indent(str_replace('	', '    ', $this->data));
     }
 }

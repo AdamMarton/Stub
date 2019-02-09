@@ -6,6 +6,8 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class FunctionEntity extends Entity implements EntityInterface
 {
@@ -14,21 +16,26 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     protected $type = Storage::S_FUNCTION;
 
+    /**
+     * @var array
+     */
+    protected $data = [];
+
+    /**
+     * @return string
+     */
     public function __toString() : string
     {
         return $this->format();
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $this->data = array_merge(
-            [$tokenizer->getCurrentToken(1)],
-            $tokenizer->advanceTo([Tokenizer::SEMICOLON, Tokenizer::BRACKET_OPEN])
-        );
+        $this->data = $tokenIterator->seekUntil(new Criteria([Tokenizer::SEMICOLON, Tokenizer::BRACKET_OPEN]));
     }
 
     /**
@@ -36,33 +43,30 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        $signature  = (array) $this->data;
+        $signature  = $this->data;
         $returnType = '';
-        $ofset      = -1;
+        $length     = -1;
         $name       = array_slice($signature, 0, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature));
-        $isAbstract = in_array('abstract', $name);
+        $isAbstract = $signature[sizeof($signature)-1] === Tokenizer::SEMICOLON;
 
-        if ($signature[sizeof($signature)-2] === ':') {
+        if (in_array(':', $signature)) {
             $returnType = ' : ' . (string) array_pop($signature);
-            $ofset      = -2;
+            $length     = -2;
         }
 
-        $arguments  = array_slice($signature, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature)+1, $ofset);
+        $arguments  = array_slice($signature, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature)+1, $length);
         $arguments  = $this->arguments($arguments);
 
-        $signature  =
-            $this->pad() .
+        $signature  = $this->pad() .
             implode(' ', $name) .
             Tokenizer::PARENTHESIS_OPEN .
-            implode(', ', $arguments) .
-            Tokenizer::PARENTHESIS_CLOSE .
-            $returnType;
+            implode(', ', $arguments) . $returnType;
 
         $signature .= !$isAbstract ?
             Tokenizer::LINE_BREAK . $this->pad() . Tokenizer::BRACKET_OPEN . Tokenizer::LINE_BREAK . $this->pad() . Tokenizer::BRACKET_CLOSE . Tokenizer::LINE_BREAK :
             Tokenizer::SEMICOLON . Tokenizer::LINE_BREAK;
 
-        return $signature;
+        return $this->formatArguments($signature);
     }
 
     /**
@@ -82,4 +86,21 @@ final class FunctionEntity extends Entity implements EntityInterface
 
         return $arguments;
     }
+
+    /**
+     * @param  string $signature
+     * @return string $signature
+     */
+    private function formatArguments(string $signature) : string
+    {
+        if (strlen($signature) > 120) {
+            $signature = (string) preg_replace(
+                ['/function\s(.*)\(/s', '/,\s/s', "/\)\n{$this->pad()}\{/s"],
+                ["function $1(\n" . $this->pad() . $this->pad(), ",\n" . $this->pad() . $this->pad(), "\n{$this->pad()}) {"],
+                $signature
+            );
+        }
+        return $signature;
+    }
+
 }

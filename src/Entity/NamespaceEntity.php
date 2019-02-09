@@ -6,6 +6,8 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class NamespaceEntity extends Entity implements EntityInterface
 {
@@ -28,15 +30,12 @@ final class NamespaceEntity extends Entity implements EntityInterface
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $this->data = array_merge(
-            [$tokenizer->getCurrentToken(1)],
-            $tokenizer->advanceTo(Tokenizer::SEMICOLON)
-        );
+        $this->data = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
     }
 
     /**
@@ -44,10 +43,10 @@ final class NamespaceEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        return
-            Tokenizer::LINE_BREAK .
-            str_replace(' \ ', '\\', implode(' ', $this->data)) .
-            Tokenizer::SEMICOLON .
-            Tokenizer::LINE_BREAK;
+        return Tokenizer::LINE_BREAK . str_replace(
+            [' \ ', ' '. Tokenizer::SEMICOLON],
+            ['\\', Tokenizer::SEMICOLON],
+            implode(' ', $this->data)
+        ) . Tokenizer::LINE_BREAK;
     }
 }

@@ -3,6 +3,9 @@
 namespace AdamMarton\Stub;
 
 use AdamMarton\Stub\Exception\LambdaException;
+use AdamMarton\Stub\Token\TokenFilter;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class Tokenizer
 {
@@ -34,6 +37,11 @@ final class Tokenizer
     /**
      * @var string
      */
+    const SCOPE_RESOLUTION  = '::';
+
+    /**
+     * @var string
+     */
     const SEMICOLON         = ';';
 
     /**
@@ -42,9 +50,9 @@ final class Tokenizer
     protected $source       = '';
 
     /**
-     * @var array
+     * @var TokenIterator $tokenIterator;
      */
-    protected $tokens       = [];
+    protected $tokenIterator;
 
     /**
      * @var mixed
@@ -62,12 +70,19 @@ final class Tokenizer
     private $openTag        = false;
 
     /**
+     * @var callable
+     */
+    private $logger;
+
+    /**
      * @param  string $source
      * @return void
      */
-    public function __construct(string $source)
+    public function __construct(string $source, callable $logger)
     {
         $this->source = $source;
+        $this->logger = $logger;
+        $this->initIterator();
     }
 
     /**
@@ -75,35 +90,48 @@ final class Tokenizer
      */
     public function parse() : string
     {
-        $this->tokens = token_get_all($this->source, TOKEN_PARSE);
-
-        while (sizeof($this->tokens)) {
-            $this->next();
-            $token = $this->getCurrentToken();
-
-            switch ($token) {
+        while ($this->getIterator()->valid()) {
+            switch ($this->getIterator()->type()) {
                 case T_OPEN_TAG:
                     $this->handleOpen();
                     break;
-                case T_NAMESPACE:
-                    $this->addEntity($this->initEntity(Storage::S_NAMESPACE));
-                    break;
                 case T_USE:
                     $this->handleUse();
+                    break;
+                case T_NAMESPACE:
+                    $this->addEntity($this->initEntity(Storage::S_NAMESPACE));
                     break;
                 case T_DOC_COMMENT:
                     $this->handleDocComment();
                     break;
                 case T_STRING:
-                    $this->addEntity($this->initEntity(Storage::S_STRING));
+                    $this->handleString();
                     break;
                 default:
-                    $this->handle($token);
+                    $this->handle($this->getIterator()->type());
                     break;
             }
+            $this->getIterator()->next();
         }
 
         return $this->getStorage()->format();
+    }
+
+    /**
+     * @return void
+     */
+    private function initIterator()
+    {
+        $tokenFilter         = new TokenFilter(token_get_all($this->source, TOKEN_PARSE));
+        $this->tokenIterator = new TokenIterator($tokenFilter->filter());
+    }
+
+    /**
+     * @return TokenIterator
+     */
+    private function getIterator() : TokenIterator
+    {
+        return $this->tokenIterator;
     }
 
     /**
@@ -136,13 +164,12 @@ final class Tokenizer
         $class = new $class;
 
         if ($class instanceof EntityInterface) {
-            $class->add($this);
+            $class->add($this->getIterator());
             return $class;
         }
 
         $class = new Entity\StringEntity();
-        $class->add();
-
+        $class->add($this->getIterator());
         return $class;
     }
 
@@ -180,13 +207,13 @@ final class Tokenizer
             return;
         }
 
-        if (in_array($token, [T_CONST, T_VAR])) {
-            $this->handleConstVar();
+        if (in_array($token, [T_PUBLIC, T_PRIVATE, T_PROTECTED, T_STATIC, T_FUNCTION])) {
+            $this->handleMethodProperty();
             return;
         }
 
-        if (in_array($token, [T_PUBLIC, T_PRIVATE, T_PROTECTED, T_STATIC, T_FUNCTION])) {
-            $this->handleMethodProperty();
+        if (in_array($token, [T_CONST, T_VAR])) {
+            $this->handleConstVar();
         }
     }
 
@@ -206,11 +233,11 @@ final class Tokenizer
      */
     private function handleUse()
     {
-        $useEntity   = $this->initEntity(Storage::S_USE);
-        $classEntity = $this->getLastEntity(Storage::S_CLASS);
+        $useEntity    = $this->initEntity(Storage::S_USE);
+        $objectEntity = $this->getLastEntity(Storage::S_OBJECT);
 
-        if ($classEntity instanceof Entity\ClassEntity) {
-            $classEntity->addUse($useEntity);
+        if ($objectEntity instanceof Entity\ObjectEntity) {
+            $objectEntity->addUse($useEntity);
             return;
         }
 
@@ -222,16 +249,16 @@ final class Tokenizer
      */
     private function handleAbstractFinal()
     {
-        if ($this->isObject()) {
-            $this->addEntity($this->initEntity(Storage::S_CLASS));
+        if ($this->isAbstractClass() && !$this->isAnonymousClass()) {
+            $this->addEntity($this->initEntity(Storage::S_OBJECT));
             return;
         }
 
         $functionEntity = $this->initEntity(Storage::S_FUNCTION);
-        $classEntity    = $this->getLastEntity(Storage::S_CLASS);
+        $objectEntity   = $this->getLastEntity(Storage::S_OBJECT);
 
-        if ($classEntity instanceof Entity\ClassEntity) {
-            $classEntity->addMethod($functionEntity);
+        if ($objectEntity instanceof Entity\ObjectEntity) {
+            $objectEntity->addMethod($functionEntity);
         }
     }
 
@@ -240,8 +267,8 @@ final class Tokenizer
      */
     private function handleObjects()
     {
-        if ($this->isObject()) {
-            $this->addEntity($this->initEntity(Storage::S_CLASS));
+        if ($this->isObject() && !$this->isAnonymousClass()) {
+            $this->addEntity($this->initEntity(Storage::S_OBJECT));
         }
     }
 
@@ -250,10 +277,10 @@ final class Tokenizer
      */
     private function handleConstVar()
     {
-        $classEntity = $this->getLastEntity(Storage::S_CLASS);
+        $objectEntity = $this->getLastEntity(Storage::S_OBJECT);
 
-        if ($classEntity instanceof Entity\ClassEntity) {
-            $classEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
+        if ($objectEntity instanceof Entity\ObjectEntity) {
+            $objectEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
         }
     }
 
@@ -262,11 +289,11 @@ final class Tokenizer
      */
     private function handleDocComment()
     {
-        $classEntity    = $this->getLastEntity(Storage::S_CLASS);
+        $objectEntity   = $this->getLastEntity(Storage::S_OBJECT);
         $docblockEntity = $this->initEntity(Storage::S_DOCBLOCK);
 
-        if ($classEntity instanceof Entity\ClassEntity) {
-            $classEntity->addDocblock($docblockEntity);
+        if ($objectEntity instanceof Entity\ObjectEntity) {
+            $objectEntity->addDocblock($docblockEntity);
         } elseif ($this->getStorageSize() === 1) {
             $this->addEntity($docblockEntity);
         }
@@ -278,13 +305,13 @@ final class Tokenizer
     private function handleMethodProperty()
     {
         try {
-            $classEntity = $this->getLastEntity(Storage::S_CLASS);
+            $objectEntity = $this->getLastEntity(Storage::S_OBJECT);
 
             if ($this->isFunction()) {
                 $functionEntity = $this->initEntity(Storage::S_FUNCTION);
 
-                if ($classEntity instanceof Entity\ClassEntity) {
-                    $classEntity->addMethod($functionEntity);
+                if ($objectEntity instanceof Entity\ObjectEntity) {
+                    $objectEntity->addMethod($functionEntity);
                     return;
                 }
 
@@ -292,13 +319,8 @@ final class Tokenizer
                 return;
             }
 
-            $nextNonEmpty = $this->seekToNonEmpty();
-
-            if ($classEntity instanceof Entity\ClassEntity &&
-                isset($nextNonEmpty['token']) &&
-                $nextNonEmpty['token'] !== '::'
-            ) {
-                $classEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
+            if ($objectEntity instanceof Entity\ObjectEntity) {
+                $objectEntity->addProperty($this->initEntity(Storage::S_VARIABLE));
             }
         } catch (LambdaException $e) {
             return;
@@ -306,122 +328,64 @@ final class Tokenizer
     }
 
     /**
-     * @param  int $key
-     * @return mixed
-     */
-    public function getCurrentToken(int $key = 0)
-    {
-        return is_array($this->currentToken) ? $this->currentToken[$key] : $this->currentToken;
-    }
-
-    /**
-     * @param  int $step
      * @return void
      */
-    private function next(int $step = 1)
+    private function handleString()
     {
-        while ($step > 0) {
-            $this->currentToken = array_shift($this->tokens);
-            $step--;
+        $objectEntity = $this->getLastEntity(Storage::S_OBJECT);
+
+        if (!$objectEntity instanceof Entity\ObjectEntity) {
+            $this->addEntity($this->initEntity(Storage::S_STRING));
         }
     }
 
     /**
-     * @return mixed
-     */
-    private function nextNonEmpty()
-    {
-        while (true) {
-            $tempToken = array_shift($this->tokens);
-
-            if (!is_array($tempToken)) {
-                return $tempToken;
-            }
-
-            $tempToken = trim((string) $tempToken[1]);
-
-            if (is_numeric($tempToken) || !empty($tempToken)) {
-                return $tempToken;
-            }
-        }
-    }
-
-    /**
-     * @param  string|array $token
-     * @return array
-     */
-    public function advanceTo($token) : array
-    {
-        $tempTokens = [];
-
-        while (true) {
-            $tempToken = $this->nextNonEmpty();
-
-            if ($this->inOrEqual($tempToken, $token)) {
-                return $tempTokens;
-            }
-
-            $tempTokens[] = $tempToken;
-        }
-
-        return $tempTokens;
-    }
-
-    /**
-     * @param  string|array $token
-     * @return array
-     */
-    public function seekTo($token) : array
-    {
-        $tempTokens = [];
-
-        foreach ($this->tokens as $tempToken) {
-            $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
-
-            if ($this->inOrEqual($tempToken, $token)) {
-                return array_filter(
-                    $tempTokens,
-                    function (string $value, int $key) : bool {
-                        return !empty(trim($value));
-                    },
-                    ARRAY_FILTER_USE_BOTH
-                );
-            }
-
-            $tempTokens[] = $tempToken;
-        }
-
-        return $tempTokens;
-    }
-
-    /**
-     * @return array|null
-     */
-    private function seekToNonEmpty()
-    {
-        $iterator = 0;
-
-        foreach ($this->tokens as $tempToken) {
-            $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
-            $iterator++;
-
-            if (is_numeric($tempToken) || !empty(trim($tempToken))) {
-                return [
-                    'iterator' => $iterator,
-                    'token'    => $tempToken
-                ];
-            }
-        }
-    }
-
-    /**
-     * @param  mixed $needle
-     * @param  mixed $haystack
      * @return bool
      */
-    private function inOrEqual($needle, $haystack)
+    private function isAbstractClass() : bool
     {
-        return (is_array($haystack)) ? in_array($needle, $haystack) : $needle === $haystack;
+        $startKey   = $this->getIterator()->key();
+        $tempTokens = $this->getIterator()->seekUntil(new Criteria(self::SEMICOLON));
+
+        if (in_array('class', $tempTokens)) {
+            $this->getIterator()->reset($startKey);
+            return true;
+        }
+
+        $this->getIterator()->reset($startKey);
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    private function isAnonymousClass() : bool
+    {
+        $startKey   = $this->getIterator()->key();
+        $tempTokens = $this->getIterator()->seekUntil(new Criteria(self::BRACKET_OPEN));
+
+        if (in_array(self::PARENTHESIS_OPEN, $tempTokens)) {
+            $open  = 0;
+            $close = 0;
+            while ($this->getIterator()->valid()) {
+                if ($this->getIterator()->current() === self::BRACKET_OPEN) {
+                    $open++;
+                } elseif ($this->getIterator()->current() === self::BRACKET_CLOSE) {
+                    $close++;
+                }
+                if ($close > $open) {
+                    call_user_func_array($this->logger, ['LAMBDA OBJECT (1): ' . implode(' ', $tempTokens)]);
+                    return true;
+                }
+                $this->getIterator()->next();
+            }
+            call_user_func_array($this->logger, ['LAMBDA OBJECT (2): ' . implode(' ', $tempTokens)]);
+            return true;
+        }
+
+        call_user_func_array($this->logger, ['NORMAL CLASS: ' . implode(' ', $tempTokens)]);
+        $this->getIterator()->reset($startKey);
+        return false;
     }
 
     /**
@@ -429,42 +393,14 @@ final class Tokenizer
      */
     private function isObject() : bool
     {
-        $objects      = ['class', 'interface', 'trait'];
-        $seek         = $this->seekTo([self::SEMICOLON, self::BRACKET_OPEN]);
-        $seekNonEmpty = $this->seekToNonEmpty();
-        
-        if ($this->getCurrentToken(1) === 'class' && in_array(self::PARENTHESIS_OPEN, $this->seekTo([self::BRACKET_OPEN])) ||
-            is_array($seekNonEmpty) && $seekNonEmpty['token'] === self::BRACKET_OPEN
-        ) {
-            $iterator = 1;
-            $opening  = 0;
-            $closing  = 0;
-            $tempArr  = [];
-            foreach ($this->tokens as $tempToken) {
-                $iterator++;
-                $tempToken = is_array($tempToken) ? (string) $tempToken[1] : (string) $tempToken;
-                $tempArr[] = $tempToken;
+        $objects    = ['class', 'interface', 'trait'];
+        $startKey   = $this->getIterator()->key();
+        $tempTokens = $this->getIterator()->seekUntil(new Criteria(self::BRACKET_OPEN));
 
-                if ($tempToken === self::BRACKET_OPEN) {
-                    $opening++;
-                }
-
-                if ($tempToken === self::BRACKET_CLOSE) {
-                    $closing++;
-                }
-
-                if ($closing > $opening) {
-                    $this->next($iterator);
-                    return false;
-                }
-            }
-            return false;
-        }
-
-        $header  = array_merge([$this->getCurrentToken(1)], $seek);
-        
         foreach ($objects as $type) {
-            if (in_array($type, $header)) {
+            if (in_array($type, $tempTokens)) {
+                call_user_func_array($this->logger, ['NATIVE OBJECT: ' . implode(' ', $tempTokens)]);
+                $this->getIterator()->reset($startKey);
                 return true;
             }
         }
@@ -478,24 +414,31 @@ final class Tokenizer
      */
     private function isFunction() : bool
     {
-        $seek         = $this->seekTo([self::SEMICOLON, self::BRACKET_OPEN]);
-        $currentToken = (string) $this->getCurrentToken(1);
+        $startKey   = $this->getIterator()->key();
+        $tempTokens = $this->getIterator()->seekUntil(new Criteria([self::SEMICOLON, self::BRACKET_OPEN]));
+        $lastToken  = (string) $tempTokens[sizeof($tempTokens)-1];
 
-        if (in_array('use', $seek) ||
-            ($currentToken === 'static' && !in_array(Storage::S_FUNCTION, $seek)) ||
-            ($currentToken === 'static' && (isset($seek[0]) && $seek[0] === self::PARENTHESIS_OPEN)) ||
-            ($seek[1] === self::PARENTHESIS_OPEN) ||
-            (in_array('::', $seek))
-        ) {
-            throw new LambdaException();
-        }
-
-        $header = array_merge([$currentToken], $seek);
-
-        if (in_array(Storage::S_FUNCTION, $header)) {
+        if ($lastToken === self::SEMICOLON && in_array('function', $tempTokens)) {
+            call_user_func_array($this->logger, ['ABSTRACT FUNCTION: ' . implode(' ', $tempTokens)]);
+            $this->getIterator()->reset($startKey);
             return true;
         }
 
+        if (in_array('use', $tempTokens) ||
+            in_array(self::SCOPE_RESOLUTION, $tempTokens) ||
+            $tempTokens[1] === self::PARENTHESIS_OPEN
+        ) {
+            call_user_func_array($this->logger, ['LAMBDA FUNCTION: ' . implode(' ', $tempTokens)]);
+            throw new LambdaException();
+        }
+
+        if (in_array(Storage::S_FUNCTION, $tempTokens)) {
+            call_user_func_array($this->logger, ['NATIVE FUNCTION: ' . implode(' ', $tempTokens)]);
+            $this->getIterator()->reset($startKey);
+            return true;
+        }
+        call_user_func_array($this->logger, ['PROPERTY: ' . implode(' ', $tempTokens)]);
+        $this->getIterator()->reset($startKey);
         return false;
     }
 }

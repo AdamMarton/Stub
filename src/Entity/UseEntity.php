@@ -6,6 +6,8 @@ use AdamMarton\Stub\Entity;
 use AdamMarton\Stub\EntityInterface;
 use AdamMarton\Stub\Storage;
 use AdamMarton\Stub\Tokenizer;
+use AdamMarton\Stub\Token\TokenIterator;
+use AdamMarton\Stub\Token\Traverse\Criteria;
 
 final class UseEntity extends Entity implements EntityInterface
 {
@@ -28,22 +30,19 @@ final class UseEntity extends Entity implements EntityInterface
     }
 
     /**
-     * @param  Tokenizer $tokenizer
+     * @param  TokenIterator $tokenIterator
      * @return void
      */
-    public function add(Tokenizer $tokenizer)
+    public function add(TokenIterator $tokenIterator)
     {
-        $seek = $tokenizer->seekTo(';');
+        $seek = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
 
         if ($seek[1] === Tokenizer::PARENTHESIS_OPEN) {
             $this->data = [];
             return;
         }
 
-        $this->data = array_merge(
-            [$tokenizer->getCurrentToken(1)],
-            $tokenizer->advanceTo(Tokenizer::SEMICOLON)
-        );
+        $this->data = $seek;
     }
 
     /**
@@ -63,8 +62,8 @@ final class UseEntity extends Entity implements EntityInterface
         }
 
         $use = str_replace(
-            [' \ ', ' , '],
-            ['\\', ', '],
+            [' \ ', ' , ', ' '. Tokenizer::SEMICOLON],
+            ['\\', ', '. ''],
             implode(' ', $signature)
         ) . $closing;
 
