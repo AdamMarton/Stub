@@ -10,9 +10,14 @@ abstract class Entity
     protected $type   = '';
 
     /**
-     * @var mixed
+     * @var int
      */
-    protected $data;
+    private $position = 0;
+
+    /**
+     * @var array
+     */
+    protected $data   = [];
 
     /**
      * @var int
@@ -25,6 +30,46 @@ abstract class Entity
     public function type() : string
     {
         return $this->type;
+    }
+
+    /**
+     * @return array
+     */
+    public function current() : array
+    {
+        return (array) $this->data[$this->position];
+    }
+
+    /**
+     * @return int
+     */
+    public function key() : int
+    {
+        return $this->position;
+    }
+
+    /**
+     * @return void
+     */
+    public function next()
+    {
+        $this->position++;
+    }
+
+    /**
+     * @return void
+     */
+    public function rewind()
+    {
+        $this->position = 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function valid() : bool
+    {
+        return isset($this->data[$this->position]);
     }
 
     /**

@@ -17,11 +17,6 @@ final class NamespaceEntity extends Entity implements EntityInterface
     protected $type = Storage::S_NAMESPACE;
 
     /**
-     * @var array
-     */
-    protected $data = [];
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -35,7 +30,7 @@ final class NamespaceEntity extends Entity implements EntityInterface
      */
     public function add(TokenIterator $tokenIterator)
     {
-        $this->data = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
+        $this->data[] = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
     }
 
     /**
@@ -46,7 +41,7 @@ final class NamespaceEntity extends Entity implements EntityInterface
         return Tokenizer::LINE_BREAK . str_replace(
             [' \ ', ' '. Tokenizer::SEMICOLON],
             ['\\', Tokenizer::SEMICOLON],
-            implode(' ', $this->data)
+            implode(' ', $this->current())
         ) . Tokenizer::LINE_BREAK;
     }
 }

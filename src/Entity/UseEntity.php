@@ -17,11 +17,6 @@ final class UseEntity extends Entity implements EntityInterface
     protected $type = Storage::S_USE;
 
     /**
-     * @var array
-     */
-    protected $data = [];
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -42,7 +37,7 @@ final class UseEntity extends Entity implements EntityInterface
             return;
         }
 
-        $this->data = $seek;
+        $this->data[] = $seek;
     }
 
     /**
@@ -50,11 +45,11 @@ final class UseEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        if (!$this->data) {
+        if (!$this->current()) {
             return '';
         }
 
-        $signature = $this->data;
+        $signature = $this->current();
         $closing   = Tokenizer::SEMICOLON;
 
         if (in_array(Tokenizer::BRACKET_OPEN, $signature)) {

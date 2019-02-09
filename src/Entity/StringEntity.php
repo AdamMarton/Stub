@@ -17,11 +17,6 @@ final class StringEntity extends Entity implements EntityInterface
     protected $type = Storage::S_STRING;
 
     /**
-     * @var string
-     */
-    protected $data = '';
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -48,7 +43,7 @@ final class StringEntity extends Entity implements EntityInterface
                 break;
         }
 
-        $this->data = $input;
+        $this->data[] = $input;
     }
 
     /**
@@ -56,6 +51,6 @@ final class StringEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        return $this->data;
+        return implode('', $this->current());
     }
 }

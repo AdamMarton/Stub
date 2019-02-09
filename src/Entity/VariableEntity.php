@@ -17,11 +17,6 @@ final class VariableEntity extends Entity implements EntityInterface
     protected $type = Storage::S_VARIABLE;
 
     /**
-     * @var array
-     */
-    protected $data = [];
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -35,7 +30,7 @@ final class VariableEntity extends Entity implements EntityInterface
      */
     public function add(TokenIterator $tokenIterator)
     {
-        $this->data = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
+        $this->data[] = $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON));
     }
 
     /**
@@ -43,7 +38,7 @@ final class VariableEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        $signature = $this->data;
+        $signature = $this->current();
         $hasValue  = array_search('=', $signature);
 
         if (is_int($hasValue) && $hasValue) {
