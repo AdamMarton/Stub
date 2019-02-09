@@ -12,5 +12,6 @@ interface EntityInterface
      * @return void
      */
     public function add(Tokenizer $tokenizer);
+
     public function setIndent(int $indent);
 }

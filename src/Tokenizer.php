@@ -142,6 +142,7 @@ final class Tokenizer
 
         $class = new Entity\StringEntity();
         $class->add();
+
         return $class;
     }
 

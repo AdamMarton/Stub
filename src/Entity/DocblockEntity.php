@@ -40,7 +40,6 @@ final class DocblockEntity extends Entity implements EntityInterface
      * @return string
      */
     private function format() : string
-    {
         return $this->indent(str_replace('	', '    ', $this->data));
     }
 }
