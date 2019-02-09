@@ -16,11 +16,6 @@ final class DocblockEntity extends Entity implements EntityInterface
     protected $type = Storage::S_DOCBLOCK;
 
     /**
-     * @var string
-     */
-    protected $data = '';
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -34,7 +29,7 @@ final class DocblockEntity extends Entity implements EntityInterface
      */
     public function add(TokenIterator $tokenIterator)
     {
-        $this->data = $tokenIterator->current();
+        $this->data[] = $tokenIterator->current();
     }
 
     /**
@@ -42,6 +37,6 @@ final class DocblockEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        return $this->pad() . $this->indent(str_replace('	', '    ', $this->data));
+        return $this->pad() . (string) preg_replace('/     \*/', "\n     *", $this->indent(str_replace('	', '    ', implode('', $this->current()))));
     }
 }

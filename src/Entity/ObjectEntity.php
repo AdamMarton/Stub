@@ -27,36 +27,14 @@ final class ObjectEntity extends Entity implements EntityInterface
     protected $type      = Storage::S_OBJECT;
 
     /**
-     * @var array
-     */
-    protected $data      = [];
-
-    /**
-     * @var bool
-     */
-    protected $namespace = false;
-
-    /**
-     * @var bool
-     */
-    protected $body      = false;
-
-    /**
-     * @var bool
-     */
-    protected $inBody    = false;
-
-    /**
      * @return string
      */
     public function __toString() : string
     {
         $class = [];
 
-        foreach ($this->data as $source) {
-            if (is_array($source)) {
-                $class[] = $this->format($source);
-            }
+        foreach ($this as $source) {
+            $class[] = $this->format($source);
         }
 
         return implode(Tokenizer::LINE_BREAK, $class) . Tokenizer::BRACKET_CLOSE . Tokenizer::LINE_BREAK;
@@ -151,8 +129,6 @@ final class ObjectEntity extends Entity implements EntityInterface
      */
     private function formatHeader(array $signature) : string
     {
-        $this->inBody = true;
-
         return Tokenizer::LINE_BREAK .
             str_replace(
                 [' , ', ' ' . Tokenizer::BRACKET_OPEN],
@@ -178,7 +154,6 @@ final class ObjectEntity extends Entity implements EntityInterface
     {
         $entity->setIndent(4);
 
-        $this->body   = true;
         $this->data[] = [
             self::DATA_TYPE      => 'property',
             self::DATA_SIGNATURE => $entity
@@ -201,7 +176,6 @@ final class ObjectEntity extends Entity implements EntityInterface
     public function addMethod(EntityInterface $entity)
     {
         $entity->setIndent(4);
-        $this->body   = true;
         $this->data[] = [
             self::DATA_TYPE      => 'method',
             self::DATA_SIGNATURE => $entity

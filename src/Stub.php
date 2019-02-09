@@ -103,8 +103,8 @@ final class Stub
         foreach ($sourceFiles as $file) {
             if ($file instanceof \SplFileInfo) {
                 $filePath  = $file->getPath();
-                // $message   = "Processing file ({$counter} of {$totalFiles}): " . $file->getBasename();
-                // print $message . str_pad('', strlen($message), ' ') . "\r";
+                $message   = "Processing file ({$counter} of {$totalFiles}): " . $file->getBasename();
+                print $message . str_pad('', strlen($message), ' ') . "\r";
                 $this->prepareDir($filePath);
                 $source    = $this->getContent($file);
                 $this->stat[self::STAT_SIZE_INPUT] += strlen($source);

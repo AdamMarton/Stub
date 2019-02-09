@@ -4,7 +4,7 @@ namespace AdamMarton\Stub;
 
 use AdamMarton\Stub\Token\TokenIterator;
 
-interface EntityInterface
+interface EntityInterface extends \Iterator
 {
     public function __toString() : string;
     public function type() : string;

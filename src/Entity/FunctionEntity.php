@@ -17,11 +17,6 @@ final class FunctionEntity extends Entity implements EntityInterface
     protected $type = Storage::S_FUNCTION;
 
     /**
-     * @var array
-     */
-    protected $data = [];
-
-    /**
      * @return string
      */
     public function __toString() : string
@@ -35,7 +30,7 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     public function add(TokenIterator $tokenIterator)
     {
-        $this->data = $tokenIterator->seekUntil(new Criteria([Tokenizer::SEMICOLON, Tokenizer::BRACKET_OPEN]));
+        $this->data[] = $tokenIterator->seekUntil(new Criteria([Tokenizer::SEMICOLON, Tokenizer::BRACKET_OPEN]));
     }
 
     /**
@@ -43,7 +38,7 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        $signature  = $this->data;
+        $signature  = $this->current();
         $returnType = '';
         $length     = -1;
         $name       = array_slice($signature, 0, (int) array_search(Tokenizer::PARENTHESIS_OPEN, $signature));
