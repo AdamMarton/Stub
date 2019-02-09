@@ -5,7 +5,7 @@
     strictBinaryOperands="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config file://C:\work\data\www\forms\vendor\vimeo\psalm\config.xsd"
+    xsi:schemaLocation="https://getpsalm.org/schema/config file://\vendor\vimeo\psalm\config.xsd"
 >
     <projectFiles>
         <directory name=".\src" />

@@ -15,6 +15,11 @@ final class UseEntity extends Entity implements EntityInterface
     protected $type = Storage::S_USE;
 
     /**
+     * @var array
+     */
+    protected $data = [];
+
+    /**
      * @return string
      */
     public function __toString() : string

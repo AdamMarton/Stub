@@ -15,6 +15,11 @@ final class NamespaceEntity extends Entity implements EntityInterface
     protected $type = Storage::S_NAMESPACE;
 
     /**
+     * @var array
+     */
+    protected $data = [];
+
+    /**
      * @return string
      */
     public function __toString() : string

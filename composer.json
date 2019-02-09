@@ -13,5 +13,8 @@
         "psr-4": {
             "AdamMarton\\Stub\\": "src/"
         }
+    },
+    "require-dev": {
+        "vimeo/psalm": "^3.0"
     }
 }
