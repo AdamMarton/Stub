@@ -33,7 +33,6 @@ $stub->generate('<output-directory>');
 
 ## Todos
 
-* Include tests
 * Test with more frameworks
 * Restore logging feature
 * Implement CLI commands/options
