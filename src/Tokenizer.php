@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub;
+namespace Stub;
 
-use AdamMarton\Stub\Exception\LambdaException;
-use AdamMarton\Stub\Token\TokenFilter;
-use AdamMarton\Stub\Token\TokenIterator;
-use AdamMarton\Stub\Token\Traverse\Criteria;
+use Stub\Exception\LambdaException;
+use Stub\Token\TokenFilter;
+use Stub\Token\TokenIterator;
+use Stub\Token\Traverse\Criteria;
 
 final class Tokenizer
 {
@@ -427,6 +427,21 @@ final class Tokenizer
             $tempTokens[1] === self::PARENTHESIS_OPEN
         ) {
             call_user_func_array($this->logger, ['LAMBDA FUNCTION: ' . implode(' ', $tempTokens)]);
+            $open  = 0;
+            $close = 0;
+            while ($this->getIterator()->valid()) {
+                if ($this->getIterator()->current() === self::BRACKET_OPEN) {
+                    $open++;
+                } elseif ($this->getIterator()->current() === self::BRACKET_CLOSE) {
+                    $close++;
+                }
+                if ($close > $open) {
+                    call_user_func_array($this->logger, ['LAMBDA OBJECT: ' . implode(' ', $tempTokens)]);
+                    throw new LambdaException();
+                }
+                $this->getIterator()->next();
+            }
+            call_user_func_array($this->logger, ['LAMBDA OBJECT (2): ' . implode(' ', $tempTokens)]);
             throw new LambdaException();
         }
 

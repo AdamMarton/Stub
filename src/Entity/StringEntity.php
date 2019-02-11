@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Entity;
+namespace Stub\Entity;
 
-use AdamMarton\Stub\Entity;
-use AdamMarton\Stub\EntityInterface;
-use AdamMarton\Stub\Storage;
-use AdamMarton\Stub\Tokenizer;
-use AdamMarton\Stub\Token\TokenIterator;
-use AdamMarton\Stub\Token\Traverse\Criteria;
+use Stub\Entity;
+use Stub\EntityInterface;
+use Stub\Storage;
+use Stub\Tokenizer;
+use Stub\Token\TokenIterator;
+use Stub\Token\Traverse\Criteria;
 
 final class StringEntity extends Entity implements EntityInterface
 {
@@ -36,7 +36,11 @@ final class StringEntity extends Entity implements EntityInterface
             case '<?php':
                 break;
             case 'define':
-                $input = implode('', $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON)));
+                $input = str_replace(
+                    ',',
+                    ', ',
+                    implode('', $tokenIterator->seekUntil(new Criteria(Tokenizer::SEMICOLON)))
+                );
                 break;
             default:
                 $input = '';

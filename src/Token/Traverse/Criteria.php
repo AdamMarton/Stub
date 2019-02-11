@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Token\Traverse;
+namespace Stub\Token\Traverse;
 
 final class Criteria
 {

@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Entity;
+namespace Stub\Entity;
 
-use AdamMarton\Stub\Entity;
-use AdamMarton\Stub\EntityInterface;
-use AdamMarton\Stub\Storage;
-use AdamMarton\Stub\Tokenizer;
-use AdamMarton\Stub\Token\TokenIterator;
-use AdamMarton\Stub\Token\Traverse\Criteria;
+use Stub\Entity;
+use Stub\EntityInterface;
+use Stub\Storage;
+use Stub\Tokenizer;
+use Stub\Token\TokenIterator;
+use Stub\Token\Traverse\Criteria;
 
 final class FunctionEntity extends Entity implements EntityInterface
 {
@@ -45,7 +45,8 @@ final class FunctionEntity extends Entity implements EntityInterface
         $isAbstract = $signature[sizeof($signature)-1] === Tokenizer::SEMICOLON;
 
         if (in_array(':', $signature)) {
-            $returnType = ' : ' . (string) array_pop($signature);
+            $colonKey   = (int) array_search(':', $signature);
+            $returnType = (string) $signature[$colonKey+1];
             $length     = -2;
         }
 
@@ -70,7 +71,7 @@ final class FunctionEntity extends Entity implements EntityInterface
      */
     protected function arguments(array $arguments) : array
     {
-        $arguments = explode(',', str_replace(['='], [' = '], implode('', $arguments)));
+        $arguments = explode(',', str_replace(['=', '):'], [' = ', ') : '], implode('', $arguments)));
 
         array_walk(
             $arguments,
@@ -90,8 +91,16 @@ final class FunctionEntity extends Entity implements EntityInterface
     {
         if (strlen($signature) > 120) {
             $signature = (string) preg_replace(
-                ['/function\s(.*)\(/s', '/,\s/s', "/\)\n{$this->pad()}\{/s"],
-                ["function $1(\n" . $this->pad() . $this->pad(), ",\n" . $this->pad() . $this->pad(), "\n{$this->pad()}) {"],
+                [
+                    '/function\s(.*)\(/s',
+                    '/,\s/s',
+                    "/\)\n{$this->pad()}\{/s"
+                ],
+                [
+                    "function $1(\n" . $this->pad() . $this->pad(),
+                    ",\n" . $this->pad() . $this->pad(),
+                    "\n{$this->pad()}) {"
+                ],
                 $signature
             );
         }

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub;
+namespace Stub;
 
-use AdamMarton\Stub\Token\TokenIterator;
+use Stub\Token\TokenIterator;
 
 interface EntityInterface extends \Iterator
 {

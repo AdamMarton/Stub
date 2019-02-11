@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub;
+namespace Stub;
 
 final class Storage
 {
@@ -80,7 +80,25 @@ final class Storage
             $stub[] = current($data);
         }
 
-        return implode(Tokenizer::LINE_BREAK, $stub);
+        return trim(preg_replace(
+            [
+                "/;\n\s{4}\/\*/s",
+                "/\s{4}\n(\;|\]\;)/s",
+                "/\{\n\n/s",
+                "/\<\?php\n{1,}/s",
+                "/namespace\s(.*)\n{3}/s",
+                "/\s{4}\}\n\s{4}\/\*/s"
+            ],
+            [
+                ";\n    /*",
+                "    $1\n}",
+                "{\n",
+                "<?php\n\n",
+                "namespace $1\n\n",
+                "    }\n\n    /*"
+            ],
+            (string) implode(Tokenizer::LINE_BREAK, $stub)
+        )) . "\n";
     }
 
     /**
