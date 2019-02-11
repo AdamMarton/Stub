@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Entity;
+namespace Stub\Entity;
 
-use AdamMarton\Stub\Entity;
-use AdamMarton\Stub\EntityInterface;
-use AdamMarton\Stub\Storage;
-use AdamMarton\Stub\Tokenizer;
-use AdamMarton\Stub\Token\TokenIterator;
-use AdamMarton\Stub\Token\Traverse\Criteria;
+use Stub\Entity;
+use Stub\EntityInterface;
+use Stub\Storage;
+use Stub\Tokenizer;
+use Stub\Token\TokenIterator;
+use Stub\Token\Traverse\Criteria;
 
 final class VariableEntity extends Entity implements EntityInterface
 {
@@ -82,8 +82,8 @@ final class VariableEntity extends Entity implements EntityInterface
     {
         if (substr_count($variable, '[') && !substr_count($variable, ' = [];')) {
             $variable = (string) preg_replace(
-                ['/\=\s\[/s', '/,\s/s', "/\n\s+\]\;/s"],
-                [" = [\n" . $this->pad() . $this->pad(), ",\n" . $this->pad() . $this->pad(), "\n" . $this->pad() . '];'],
+                ['/\=\s\[/s', '/,\s/s', "/\n\s+\]\;/s", "/];\n/s"],
+                ["= [\n" . $this->pad() . $this->pad(), ",\n" . $this->pad() . $this->pad(), "\n" . $this->pad() . '];', "\n" . $this->pad() . "];\n"],
                 $variable
             );
         }

@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Entity;
+namespace Stub\Entity;
 
-use AdamMarton\Stub\Entity;
-use AdamMarton\Stub\EntityInterface;
-use AdamMarton\Stub\Storage;
-use AdamMarton\Stub\Tokenizer;
-use AdamMarton\Stub\Token\TokenIterator;
+use Stub\Entity;
+use Stub\EntityInterface;
+use Stub\Storage;
+use Stub\Tokenizer;
+use Stub\Token\TokenIterator;
 
 final class DocblockEntity extends Entity implements EntityInterface
 {
@@ -37,6 +37,18 @@ final class DocblockEntity extends Entity implements EntityInterface
      */
     private function format() : string
     {
-        return $this->pad() . (string) preg_replace('/     \*/', "\n     *", $this->indent(str_replace('	', '    ', implode('', $this->current()))));
+        return $this->pad() . (string) preg_replace(
+            [
+                '/     \*/',
+                "/\/\*\*\s\*/s",
+                "/(\w+)\s\*\//s"
+            ],
+            [
+                "\n     *",
+                "/**\n *",
+                "$1\n */\n"
+            ],
+            $this->indent(str_replace('	', '    ', implode('', $this->current())))
+        );
     }
 }

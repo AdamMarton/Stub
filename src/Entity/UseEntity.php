@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub\Entity;
+namespace Stub\Entity;
 
-use AdamMarton\Stub\Entity;
-use AdamMarton\Stub\EntityInterface;
-use AdamMarton\Stub\Storage;
-use AdamMarton\Stub\Tokenizer;
-use AdamMarton\Stub\Token\TokenIterator;
-use AdamMarton\Stub\Token\Traverse\Criteria;
+use Stub\Entity;
+use Stub\EntityInterface;
+use Stub\Storage;
+use Stub\Tokenizer;
+use Stub\Token\TokenIterator;
+use Stub\Token\Traverse\Criteria;
 
 final class UseEntity extends Entity implements EntityInterface
 {

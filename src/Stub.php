@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace AdamMarton\Stub;
+namespace Stub;
 
 final class Stub
 {
@@ -64,24 +64,28 @@ final class Stub
      */
     public function __construct(string $directory)
     {
-        $this->rootDir = $directory;
-        $appNamespace  = explode(DIRECTORY_SEPARATOR, $directory);
-        $appName       = array_pop($appNamespace);
+        $this->rootDir   = $directory;
+        $appNamespace    = explode(DIRECTORY_SEPARATOR, $directory);
+        $appName         = array_pop($appNamespace);
 
         if ($appName) {
             $this->appName = $appName;
         }
 
         if ($this->logEnabled) {
-            $this->logHandler = fopen($this->logFile, 'w');
+            $logHandler = fopen($this->logFile, 'w');
+            if (is_resource($logHandler)) {
+                $this->logHandler = $logHandler;
+            }
         }
     }
 
     /**
-     * @param  string $outputPath
-     * @return void
+     * @param  string    $outputPath
+     * @param  Generator $generator
+     * @return Generator $generator
      */
-    public function generate(string $outputPath)
+    public function generate(string $outputPath, Generator $generator)
     {
         print "
          __       ___.     ________          0.0.1
@@ -90,18 +94,29 @@ final class Stub
  \___ \ |  | |  |  / \_\ \    \_\  \  ___/|   |  \
 /____  >|__| |____/|___  /\______  /\___  >___|  /
      \/                \/        \/     \/     \/ \n\n";
+
         $start            = $start = microtime(true);
+        $ratio            = 0;
         $sourceFiles      = $this->getPhpFiles();
         $counter          = 1;
         $totalFiles       = sizeof($sourceFiles);
         $outputPath       = realpath($outputPath);
+
         if ($outputPath) {
             $this->outputPath = $outputPath;
         }
+
         $this->stat['total_files'] = $totalFiles;
         $logCallback      = function ($args) {
             return call_user_func_array([$this, 'log'], [$args]);
         };
+
+        $executionTime = number_format(($start = microtime(true) - $start), 2);
+        $originalSize  = (float) number_format((float) ($this->getInputSize()/1000000), 2);
+        $stubSize      = (float) number_format((float) ($this->getOutputSize()/1000000), 2);
+        if ($originalSize > $stubSize) {
+            $ratio = number_format((($stubSize/$originalSize) * 100), 2);
+        }
 
         foreach ($sourceFiles as $file) {
             if ($file instanceof \SplFileInfo) {
@@ -118,14 +133,10 @@ final class Stub
                 $stub      = $tokenizer->parse();
                 $this->increaseOutput(strlen($stub));
                 $this->saveStub($file, $stub);
+                $generator->push($stub);
                 $counter++;
             }
         }
-
-        $executionTime = number_format(($start = microtime(true) - $start), 2);
-        $originalSize  = (float) number_format((float) ($this->getInputSize()/1000000), 2);
-        $stubSize      = (float) number_format((float) ($this->getOutputSize()/1000000), 2);
-        $ratio         = number_format((($stubSize/$originalSize) * 100), 2);
 
         print "\n\nParsed a total of {$totalFiles} files in {$executionTime} secs.\r\n";
         print "Original ({$originalSize} Mbytes) to Stub ({$stubSize} Mbytes) size ratio is {$ratio}%.\r\n\n";
@@ -133,6 +144,13 @@ final class Stub
         if (is_resource($this->logHandler)) {
             fclose($this->logHandler);
         }
+        return $generator;
+    }
+
+    private function generator($sourceFiles, $logCallback)
+    {
+        $counter = 1;
+        $totalFiles       = sizeof($sourceFiles);
     }
 
     /**
