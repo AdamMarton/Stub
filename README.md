@@ -22,7 +22,7 @@ $ composer require adammarton/stub
 
 require_once('vendor\autoload.php');
 
-$stub = new AdamMarton\Stub\Stub('<directory-to-parse>');
+$stub = new Stub\Stub('<directory-to-parse>');
 $stub->generate('<output-directory>');
 ```
 
